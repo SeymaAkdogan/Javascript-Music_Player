@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>ToDo APP</title>
+    <style>
+        .bg {
+            background-color: #f2d7e2;
+        }
+        .dropdown-toggle::after {
+            display: none;
+            ;
+        }
+
+        .task {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .task label.checked {
+            text-decoration: line-through;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filters span.active {
+            color: #3C87FF;
+        }
+
+        .filters span {
+            margin-right: 5px;
+            font-size: 15px;
+            column-rule-color: #444444;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class=" bg">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        Todo App
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="input-group">
+                                <input type="text" id="txtTaskName" class="form-control">
+                                <button type="submit" class="btn" id="btnAddNewTask" style="background-color: #77a4e5;">
+                                    ADD
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header controls">
+                        <div class="filters">
+                            <span class="active" id="all">ALL</span>
+                            <span id="pending">Pending</span>
+                            <span id="completed">Completed</span>
+                        </div>
+                        <button id="btnClear" class="btn btn-sm float-end text-white" style="background-color: #f72e2e;">Clear</button>
+                    </div>
+                    <ul id="task-list" class="list-group list-group-flush bg-transparent">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+        let taskList = [];
+
+        // SAVE TO LOCAL STORAGE
+        if (localStorage.getItem("taskList") !== null) {
+            taskList = JSON.parse(localStorage.getItem("taskList"));
+        }
+
+        let ul = document.querySelector("#task-list");
+        let editId;
+        let isEditTask = false;
+        const taskInput = document.querySelector("#txtTaskName");
+        const btnClear = document.querySelector("#btnClear");
+        const filters = document.querySelectorAll(".filters span")
+        displayTask("all");
+
+        // SHOW TASKS
+        function displayTask(filter) {
+            
+            ul.innerHTML="";
+            for (let task of taskList) {
+                let completed = task.status == "completed" ? "checked" : "";
+                if (filter == task.status || filter == "all") {
+
+                    let li = `
+                        <li class="task list-group-item">
+                            <div class="form-check">
+                                <input type="checkbox" onclick="updateStatus(this)" id="${task.id}" class="form-check-input" ${completed}>
+                                <label for="${task.id}" class="form-check-label ${completed}">${task.taskName}</label>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis"></i>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                                    <li><a onclick="deleteTask(${task.id})" class="dropdown-item" href="#"><i class="fa-solid fa-trash-can"></i> Sil</a></li>
+                                    <li><a onclick='editTask(${task.id}, "${task.taskName}")' class="dropdown-item" href="#"><i class="fa-solid fa-pen"></i> Düzenle</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                    `;
+                    ul.insertAdjacentHTML("beforeend", li);
+                }
+            }
+        }
+
+        document.querySelector("#btnAddNewTask").addEventListener('click', addNewTask);
+
+        // LISTEN TO THE KEYBOARD TO ADD NEW TASKS
+        document.querySelector("#btnAddNewTask").addEventListener('keypress',function(){
+            if(event.key == "Enter"){
+                document.getElementById("btnAddNewTask").click();
+            }
+        });
+
+        for(let span of filters) {
+            span.addEventListener("click", function() {
+                document.querySelector("span.active").classList.remove("active");
+                span.classList.add("active");
+                displayTask(span.id);
+            })
+        }
+
+        // LISTEN ALL CLEAR BUTTON
+        btnClear.addEventListener("click",function(){
+            taskList.splice(0,taskList.length);
+            displayTask(document.querySelector("span.active").id);
+            localStorage.setItem("taskList", JSON.stringify(taskList));
+        })
+
+        // ADD NEW TASK
+        function addNewTask(event) {
+
+            if(taskInput.value == ""){
+                alert("You Have to Put Task Name!!");
+            }else{
+                if(isEditTask){
+                    //update task
+                    for(let task of taskList){
+                        if(task.id == editId){
+                            task.taskName = taskInput.value;
+                        }
+                        isEditTask = false;
+                    }
+                }else{
+                    //add new task
+                    taskList.push({id:taskList.length+1 , taskName:taskInput.value , status:"pending"});
+                }
+
+                taskInput.value = "";
+                displayTask(document.querySelector("span.active").id);
+                localStorage.setItem("taskList", JSON.stringify(taskList));
+            }
+            
+            event.preventDefault();
+        }
+
+        // DELETE ONE TASK
+        function deleteTask(id)
+        {
+            let task = taskList.find(t => t.id == id);
+
+            let deleteId = taskList.indexOf(task);
+            if (deleteId > -1) { 
+                taskList.splice(deleteId, 1); 
+            }
+
+            displayTask(document.querySelector("span.active").id);
+            localStorage.setItem("taskList", JSON.stringify(taskList));
+        }
+
+        // EDIT TASK
+        function editTask(taskId,taskName)
+        {
+            editId= taskId;
+            taskInput.value = taskName;
+            isEditTask = true;
+            taskInput.focus();
+            taskInput.classList.add("active");
+            
+        }
+
+        function updateStatus(task){
+
+            let editTask = taskList.find(t => t.id == task.id);
+            if(task.checked)
+            {
+                editTask.status = "completed";
+            }else{
+                editTask.status = "pending";
+            }
+            displayTask(document.querySelector("span.active").id)
+            localStorage.setItem("taskList", JSON.stringify(taskList));
+        }
+    </script>
+</body>
+
+</html>
