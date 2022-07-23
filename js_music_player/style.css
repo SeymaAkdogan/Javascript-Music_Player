@@ -1,0 +1,24 @@
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #E8E8E8;
+}
+
+.container {
+    width: 400px;
+}
+
+#volume-bar {
+    margin-left: 10px;
+}
+
+#volume,
+.list-group-item {
+    cursor: pointer;
+}
+
+i{
+    font-size: 20px;
+}
